@@ -8,8 +8,7 @@
 ; OUTPUTS: RD1 is connected to a Heating LED. RD2 is connected to a Cooling LED.
 ; INPUTS: measuredTempInput and refTempInput (both constants).
 ; Versions:
-;   V1.0: 3/9/26 - First version 
-;   V1.1: 3/10/26 - Fixed errors
+;   V1.1: 3/10/26 - First version
 ;   V1.2: 3/11/26 - Fixed more errors
 ;   V1.3: 3/12/26 - Fixed error with negative values
 
