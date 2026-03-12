@@ -56,15 +56,13 @@ REG01   EQU     1h
     MOVLW   measuredTempInput
     MOVWF   0x21
  
-;checking for negative values in measuredTemp
-    BTFSC   0x21, 7		
-    BRA     measuredTempLESS
-    
-;if negative, convert to positive with two's complement
-    COMF    0x21, F
-    INCF    0x21, F
+BTFSS   0x21,7      ; skip next if positive
+    BRA     COMPARE     ; if positive, continue to compare
+
+    BRA     measuredTempLESS ; if negative, heating
 
 ;comparing measuredTemp - refTemp  (CORRECTED)
+COMPARE:    
     MOVF    0x20, W        ; W = refTemp
     SUBWF   0x21, W        ; W = measuredTemp - refTemp
     
