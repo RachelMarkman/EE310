@@ -11,10 +11,33 @@
 #define RELAY_OUT   LATAbits.LATA1
 #define BUZZER_OUT  LATAbits.LATA2
 
+extern volatile uint8_t emergency_flag;
+
+/* Prototypes */
+void delay_ms_block(uint16_t ms);
+void display_digit(uint8_t digit);
+void display_blank(void);
+void motor_on(void);
+void motor_off(void);
+void buzzer_on(void);
+void buzzer_off(void);
+void wrong_code_alert(void);
+void emergency_melody_ISR(void);
+uint8_t count_sensor_pulses_pr1(void);
+uint8_t count_sensor_pulses_pr2(void);
+
 void delay_ms_block(uint16_t ms)
 {
     while(ms--)
     {
+        if(emergency_flag)
+        {
+            motor_off();
+            buzzer_off();
+            display_blank();
+            return;
+        }
+
         __delay_ms(1);
     }
 }
@@ -75,6 +98,7 @@ void emergency_melody_ISR(void)
 
     for(i = 0; i < 4; i++)
     {
+        if(emergency_flag) return;
         buzzer_on();
         delay_ms_block(150);
         buzzer_off();
@@ -83,6 +107,7 @@ void emergency_melody_ISR(void)
 
     for(i = 0; i < 2; i++)
     {
+        if(emergency_flag) return;
         buzzer_on();
         delay_ms_block(400);
         buzzer_off();
@@ -96,11 +121,16 @@ uint8_t count_sensor_pulses_pr1(void)
     uint16_t idle_ms = 0;
     uint8_t prev_state = 0;
 
-    while(PR1_PORT == 0);
+    while(PR1_PORT == 0)
+    {
+        if(emergency_flag) return 0;
+    }
 
     while(1)
     {
         uint8_t current_state = PR1_PORT;
+
+        if(emergency_flag) return 0;
 
         if((current_state == 1) && (prev_state == 0))
         {
@@ -140,11 +170,16 @@ uint8_t count_sensor_pulses_pr2(void)
     uint16_t idle_ms = 0;
     uint8_t prev_state = 0;
 
-    while(PR2_PORT == 0);
+    while(PR2_PORT == 0)
+    {
+        if(emergency_flag) return 0;
+    }
 
     while(1)
     {
         uint8_t current_state = PR2_PORT;
+
+        if(emergency_flag) return 0;
 
         if((current_state == 1) && (prev_state == 0))
         {
