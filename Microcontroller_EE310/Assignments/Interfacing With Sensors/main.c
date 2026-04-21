@@ -16,8 +16,11 @@ void __interrupt() ISR(void)
         if(IOCBFbits.IOCBF2)
         {
             emergency_flag = 1;
+
             motor_off();
-            emergency_melody_ISR();
+            buzzer_off();
+            display_blank();
+
             IOCBFbits.IOCBF2 = 0;
         }
 
@@ -40,8 +43,10 @@ int main(void)
     {
         if(emergency_flag)
         {
-            emergency_flag = 0;
+            motor_off();
+            buzzer_off();
             display_blank();
+            emergency_flag = 0;
         }
 
         digit1 = count_sensor_pulses_pr1();
@@ -62,6 +67,8 @@ int main(void)
         {
             wrong_code_alert();
         }
+
+        if(emergency_flag) continue;
 
         delay_ms_block(250);
         display_blank();
