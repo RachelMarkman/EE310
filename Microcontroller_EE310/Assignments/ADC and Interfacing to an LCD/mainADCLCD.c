@@ -1,4 +1,3 @@
-
 #include <xc.h>
 #include <stdio.h>
 
@@ -8,13 +7,17 @@
 #pragma config RSTOSC = HFINTOSC_1MHZ
 #pragma config CLKOUTEN = OFF
 #pragma config WDTE = OFF
-#pragma config LVP = ON
+#pragma config LVP = OFF
 #pragma config MCLRE = EXTMCLR
-#pragma config MVECEN = OFF
+#pragma config MVECEN = ON
 
 #define RS LATDbits.LATD0
 #define EN LATDbits.LATD1
 #define LCD_DATA LATB
+
+#define RED_LED LATE0
+
+volatile unsigned char haltRequest = 0;
 
 void delay_ms(unsigned int ms)
 {
@@ -105,6 +108,64 @@ unsigned int ADC_Read()
     return ((unsigned int)ADRESH << 8) | ADRESL;
 }
 
+void IOC_Init(void)
+{
+    ANSELC = 0x00;
+    ANSELE = 0x00;
+
+    TRISE0 = 0;
+    TRISC2 = 1;
+
+    RED_LED = 0;
+
+    WPUCbits.WPUC2 = 1;
+
+    IOCCNbits.IOCCN2 = 1;
+    IOCCPbits.IOCCP2 = 0;
+
+    IOCCFbits.IOCCF2 = 0;
+    PIR0bits.IOCIF = 0;
+
+    PIE0bits.IOCIE = 1;
+
+    INTCON0bits.IPEN = 0;
+    INTCON0bits.GIE = 1;
+}
+
+void __interrupt(irq(IOC), base(8)) IOC_ISR(void)
+{
+    if(IOCCFbits.IOCCF2)
+    {
+        haltRequest = 1;
+        IOCCFbits.IOCCF2 = 0;
+    }
+
+    PIR0bits.IOCIF = 0;
+}
+
+void Halt_10s(void)
+{
+    unsigned char i;
+
+    LCD_SetCursor(1, 0);
+    LCD_String("SYSTEM HALTED  ");
+
+    LCD_SetCursor(2, 0);
+    LCD_String("ADC paused 10s ");
+
+    for(i = 0; i < 20; i++)
+    {
+        RED_LED = 1;
+        delay_ms(250);
+        RED_LED = 0;
+        delay_ms(250);
+    }
+
+    RED_LED = 0;
+    haltRequest = 0;
+    LCD_Clear();
+}
+
 void main()
 {
     unsigned int adc;
@@ -122,19 +183,30 @@ void main()
 
     ANSELB = 0x00;
     ANSELD = 0x00;
+    ANSELC = 0x00;
+    ANSELE = 0x00;
+
     TRISB = 0x00;
     TRISD = 0x00;
 
     LATB = 0x00;
     LATD = 0x00;
+    LATE = 0x00;
 
     LCD_Init();
     ADC_Init();
+    IOC_Init();
 
     LCD_Clear();
 
     while(1)
     {
+        if(haltRequest)
+        {
+            haltRequest = 0;
+            Halt_10s();
+        }
+
         adc = ADC_Read();
 
         voltage_mv = ((unsigned long)adc * 5000UL) / 1023UL;
@@ -144,14 +216,7 @@ void main()
         else
             change = last_voltage - voltage_mv;
 
-        /*
-         * Acceleration calibration:
-         * 10.6V = 0.00 m/s2
-         * 8.9V or below = -9.81 m/s2, left
-         * 12.5V or above = +9.81 m/s2, right
-         */
-
-       if(voltage_mv <= 8000)
+        if(voltage_mv <= 8000)
         {
             accel_x100 = -981;
         }
