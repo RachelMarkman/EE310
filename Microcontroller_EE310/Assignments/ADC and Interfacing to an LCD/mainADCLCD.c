@@ -151,7 +151,7 @@ void main()
          * 12.5V or above = +9.81 m/s2, right
          */
 
-        if(voltage_mv <= 8900)
+       if(voltage_mv <= 8000)
         {
             accel_x100 = -981;
         }
@@ -159,13 +159,13 @@ void main()
         {
             accel_x100 = 981;
         }
-        else if(voltage_mv < 10600)
+        else if(voltage_mv < 10080)
         {
-            accel_x100 = -((long)(10600 - voltage_mv) * 981) / (10600 - 8900);
+            accel_x100 = -((long)(10080 - voltage_mv) * 981) / (10080 - 8000);
         }
         else
         {
-            accel_x100 = ((long)(voltage_mv - 10600) * 981) / (12500 - 10600);
+            accel_x100 = ((long)(voltage_mv - 10080) * 981) / (12500 - 10080);
         }
 
         if(change > 500)
